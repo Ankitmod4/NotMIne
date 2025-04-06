@@ -10,18 +10,30 @@ module.exports.index = async (req,res)=>{
     res.render("listings/new.ejs");
 }
 
-module.exports.showListing = async(req,res)=>{
-    let {id} = req.params;
-    console.log("Request ID:", req.params.id);
-//   const listing = await Listing.findById(id).populate("reviews");}).
-const listing = await Listing.findById(id).populate({path:"reviews",populate:{path:"author"}}).populate("owner");
-if(!listing){
-    req.flash("error","Listing you requested for does not exist!")
-    res.redirect("/listings");
-}
-res.render("listings/show.ejs",{listing});
-}
+module.exports.showListing = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log("Request ID:", id);
 
+        const listing = await Listing.findById(id)
+            .populate("owner") // Populate the listing owner
+            .populate({
+                path: "reviews",
+                populate: { path: "author" } // Populate review authors
+            });
+
+        if (!listing) {
+            req.flash("error", "Listing you requested for does not exist!");
+            return res.redirect("/listings"); 
+        }
+
+        res.render("listings/show", { listing, currUser: req.user }); 
+    } catch (err) {
+        console.error("Error fetching listing:", err);
+        req.flash("error", "Failed to load listing details.");
+        res.redirect("/listings");
+    }
+};
 module.exports.createListing = async(req,res)=>{
     let url = req.path.file;
     let filename= req.path.filename;
